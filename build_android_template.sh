@@ -51,6 +51,11 @@ do_git() {
 
 do_build() {
 	echo "do build start at $(date)" | tee -a $APP_BUILD_LOGFILE
+	applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
+	echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
+	newApplicationId=$applicationId.$OPERATION
+	echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
+	sed -i "s/applicationId .*/applicationId \"$newApplicationId\"/g" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
 	cd $APP_SOURCE_ROOTDIR
 	./gradlew $* 2>&1 | tee -a $APP_BUILD_LOGFILE
 	echo "do build end at $(date)" | tee -a $APP_BUILD_LOGFILE
@@ -59,11 +64,6 @@ do_build() {
 do_sync() {
 	echo "do sync start at $(date)" | tee -a $APP_BUILD_LOGFILE
 	config=$*
-	applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
-	echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
-	newApplicationId=$applicationId.$config
-	echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
-	sed -i 's/applicationId .*/applicationId \"$newApplicationId\"/g' $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
 	versionName=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "versionName " | awk  '{print $2}' | sed 's/\"//g')
 	cp $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build/outputs/apk/$APP_MAIN_MODULE-$config-$versionName.apk $APP_BUILD_DIR/Android-$config-$versionName.apk
 	cp $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build/outputs/mapping/$config/mapping.txt $APP_BUILD_DIR/mapping.txt
@@ -77,14 +77,16 @@ do_sync() {
 	else
 		git log --pretty=format:"<a alt='' href='$GIT_HTTP_URL/commit/%H'>%h</a> -%an,%ad : %s"  --since="`date +%Y-%m-%d` 00:00" --before="`date '+%Y-%m-%d %H-%M'`" >> $CURRENTDIR/log/email.txt
 	fi
-	echo "\n<br>curl -F \"file=@$APP_BUILD_DIR/Android-$config-$versionName.apk\" -F \"uKey=$PGY_USER_KEY\" -F \"_api_key=$PGY_API_KEY\" https://www.pgyer.com/apiv1/app/upload" >> $CURRENTDIR/log/email.txt
+	echo "\n<br>curl -F \"file=@$APP_BUILD_DIR/Android-$config-$versionName.apk\" -F \"uKey=$PGY_USER_KEY\" -F \"_api_key=$PGY_API_KEY\" https://www.pgyer.com/apiv1/app/upload" | tee -a $APP_BUILD_LOGFILE
 	result=`curl -F "file=@$APP_BUILD_DIR/Android-$config-$versionName.apk" -F "uKey=$PGY_USER_KEY" -F "_api_key=$PGY_API_KEY" https://www.pgyer.com/apiv1/app/upload`
 	echo $result | tee -a $APP_BUILD_LOGFILE
-	appQRCodeURL=`echo $result | grep -o 'appQRCodeURL.*' | awk -F: '{print $2":"$3}' | sed 's/\\//g'`
-	echo $appQRCodeURL > $CURRENTDIR/log/appQRCodeURL.txt
-	echo "curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL" | tee -a $APP_BUILD_LOGFILE
-	curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL
-	echo "<br><img src='$appQRCodeURL'>" >> $CURRENTDIR/log/email.txt
+	appQRCodeURL=`echo $result | grep -o "\"appQRCodeURL\":\".*\"" | awk -F: '{print $2":"$3}' | sed 's/^"//g' | sed 's/\"//g'`
+	echo $appQRCodeURL
+	appQRCodeURL_c=$(echo $appQRCodeURL | sed 's#\\##g')
+	echo $appQRCodeURL_c
+	echo "curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL_c" | tee -a $APP_BUILD_LOGFILE
+	curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL_c
+	echo "<br><img src='$appQRCodeURL_c'>" >> $CURRENTDIR/log/email.txt
 	echo "do sync end at $(date)" | tee -a $APP_BUILD_LOGFILE
 }
 

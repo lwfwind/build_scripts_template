@@ -86,7 +86,7 @@ do_sync() {
 	echo $appQRCodeURL_c
 	echo "curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL_c" | tee -a $APP_BUILD_LOGFILE
 	curl -o $APP_BUILD_DIR/appQRCode.png $appQRCodeURL_c
-	echo "<br><img src='$appQRCodeURL_c'>" >> $CURRENTDIR/log/email.txt
+	echo "\n<br><img src='$appQRCodeURL_c'>" >> $CURRENTDIR/log/email.txt
 	echo "do sync end at $(date)" | tee -a $APP_BUILD_LOGFILE
 }
 

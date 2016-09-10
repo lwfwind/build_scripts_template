@@ -6,14 +6,19 @@ source /etc/profile
 SELF=$(cd $(dirname $0); pwd -P)/$(basename $0)
 CURRENTDIR=$(cd $(dirname $0); pwd -P)
 DATE=$(date +%y-%m-%d-%H-%M)
-PGY_USER_KEY=ec36bc42bab3733a4f82840bffbf497e
-PGY_API_KEY=8697e51e3159272a081c3d1084be2274
-APP_SOURCE_ROOTDIR=/home/git/develop/platform
-APP_MAIN_MODULE=tool
+PGY_USER_KEY=XXXXXXXXXXXXXXXXXXXX
+PGY_API_KEY=XXXXXXXXXXXXXXXXXXXXX
+APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/develop/XXXXX
+APP_MAIN_MODULE=XXXXXXXXXX
+SDK_NAME=iphoneos9.3
+PRODUCT_BUNDLE_IDENTIFIER='XXXXXXXXXXXXXXXXX'
+CODE_SIGN_IDENTITY='XXXXXXXXXX'
+PROVISIONING_PROFILE_NAME='XXXXXX'
+PROVISIONING_PROFILE_UUID='XXXXXXXXXXXXXXXXXXXXXX'
 APP_BUILD_DIR=$CURRENTDIR/build
 APP_BUILD_LOGFILE=$CURRENTDIR/log/log.log
-GIT_URL=git@xx.xx.xx.xx:pc-developer/platform.git
-GIT_HTTP_URL=http://xx.xx.xx.xx/pc-developer/platform
+GIT_URL=git@XXXXX:xxxxxxxxxxx/XXXXX.git
+GIT_HTTP_URL=http://XXXXX/XXXXXXXXXXX
 rm -rf $CURRENTDIR/log/
 rm -rf $APP_BUILD_DIR
 test -d $CURRENTDIR/log || mkdir -p $CURRENTDIR/log
@@ -24,8 +29,8 @@ do_pre() {
 	echo "do pre start at $(date)" | tee -a $APP_BUILD_LOGFILE
 	test -d $APP_SOURCE_ROOTDIR || mkdir -p $APP_SOURCE_ROOTDIR
 	cd $APP_SOURCE_ROOTDIR/
-	git checkout -- $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
-	./gradlew clean 2>&1 | tee -a $APP_BUILD_LOGFILE
+	git checkout -- $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/$APP_MAIN_MODULE/Info.plist
+	git checkout -- $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/$APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	rm -rf $APP_BUILD_DIR/* | tee -a $APP_BUILD_LOGFILE
 	rm -rf $CURRENTDIR/log/*.txt
 	echo "do pre end at $(date)" | tee -a $APP_BUILD_LOGFILE
@@ -51,25 +56,39 @@ do_git() {
 
 do_build() {
 	echo "do build start at $(date)" | tee -a $APP_BUILD_LOGFILE
-	applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
-	echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
-	newApplicationId=$applicationId.$OPERATION
-	echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
-	sed -i "s/applicationId .*/applicationId \"$newApplicationId\"/g" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
-	cd $APP_SOURCE_ROOTDIR
-	./gradlew $* 2>&1 | tee -a $APP_BUILD_LOGFILE
+	cd $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE
+	export LANG=GBK.UTF-8
+	lineNum=`sed -n '/CFBundleVersion/=' $APP_MAIN_MODULE/Info.plist`
+	echo $(($lineNum+1)) | tee -a $APP_BUILD_LOGFILE
+	sed -i "" "$(($lineNum+1))s#<string>.*</string>#<string>$(date +%y%m%d)</string>#" $APP_MAIN_MODULE/Info.plist
+	sed -i "" "s#LaunchImage_release#LaunchImage_dev#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
+	sed -i "" "s#PRODUCT_BUNDLE_IDENTIFIER = .*;#PRODUCT_BUNDLE_IDENTIFIER = $PRODUCT_BUNDLE_IDENTIFIER;#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
+	sed -i "" "s#PROVISIONING_PROFILE = \".*\"#PROVISIONING_PROFILE = \"$PROVISIONING_PROFILE_UUID\"#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
+	sed -i "" "s#CODE_SIGN_IDENTITY = \".*\"#CODE_SIGN_IDENTITY = \"$CODE_SIGN_IDENTITY\"#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
+	sed -i "" "s#\"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]\" = \".*\"#\"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]\" = \"$CODE_SIGN_IDENTITY\"#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
+	export LANG=en_US.UTF-8
+	config=$*
+	cd $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE
+	xcodebuild -workspace $APP_MAIN_MODULE.xcworkspace -sdk $SDK_NAME -scheme $APP_MAIN_MODULE -configuration $config clean
+	xcodebuild -workspace $APP_MAIN_MODULE.xcworkspace -sdk $SDK_NAME -scheme $APP_MAIN_MODULE -configuration $config archive -archivePath bin/$APP_MAIN_MODULE.xcarchive 2>&1 | tee -a $APP_BUILD_LOGFILE
+	xcodebuild -exportArchive -exportFormat IPA -archivePath bin/$APP_MAIN_MODULE.xcarchive -exportPath bin/$APP_MAIN_MODULE.ipa -exportProvisioningProfile $PROVISIONING_PROFILE_NAME 2>&1 | tee -a $APP_BUILD_LOGFILE
 	echo "do build end at $(date)" | tee -a $APP_BUILD_LOGFILE
 }
 
 do_sync() {
 	echo "do sync start at $(date)" | tee -a $APP_BUILD_LOGFILE
 	config=$*
-	versionName=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "versionName " | awk  '{print $2}' | sed 's/\"//g')
-	cp $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build/outputs/apk/$APP_MAIN_MODULE-$config-$versionName.apk $APP_BUILD_DIR/Android-$config-$versionName.apk
-	cp $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build/outputs/mapping/$config/mapping.txt $APP_BUILD_DIR/mapping.txt
-	test -f $APP_BUILD_DIR/Android-$config-$versionName.apk && echo "<br>Build Successfully" >> $CURRENTDIR/log/email.txt
-	test -f $APP_BUILD_DIR/Android-$config-$versionName.apk || echo "<br>Build Failed, please refer to the attach log" >> $CURRENTDIR/log/email.txt
-	test -f $APP_BUILD_DIR/Android-$config-$versionName.apk || exit 1
+	for i in `find $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE -name '*.ipa' -print`
+	do
+		cp $i $APP_BUILD_DIR/IOS-$config.ipa
+	done
+	for i in `find $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE -name '*.dSYM' -print`
+	do
+		zip -r $APP_BUILD_DIR/dSYM.zip $i
+	done
+	test -f $APP_BUILD_DIR/IOS-$config.ipa && echo "<br>Build Successfully" >> $CURRENTDIR/log/email.txt
+	test -f $APP_BUILD_DIR/IOS-$config.ipa || echo "<br>Build Failed" >> $CURRENTDIR/log/email.txt
+	test -f $APP_BUILD_DIR/IOS-$config.ipa || exit 1
 	echo "<br>" >> $CURRENTDIR/log/email.txt
 	curHour=$(date +%H)
 	if [ $curHour -lt 9 ]; then
@@ -77,8 +96,8 @@ do_sync() {
 	else
 		git log --pretty=format:"<a alt='' href='$GIT_HTTP_URL/commit/%H'>%h</a> -%an,%ad : %s"  --since="`date +%Y-%m-%d` 00:00" --before="`date '+%Y-%m-%d %H-%M'`" >> $CURRENTDIR/log/email.txt
 	fi
-	echo "\n<br>curl -F \"file=@$APP_BUILD_DIR/Android-$config-$versionName.apk\" -F \"uKey=$PGY_USER_KEY\" -F \"_api_key=$PGY_API_KEY\" https://www.pgyer.com/apiv1/app/upload" | tee -a $APP_BUILD_LOGFILE
-	result=`curl -F "file=@$APP_BUILD_DIR/Android-$config-$versionName.apk" -F "uKey=$PGY_USER_KEY" -F "_api_key=$PGY_API_KEY" https://www.pgyer.com/apiv1/app/upload`
+	echo "\n<br>curl -F \"file=@$APP_BUILD_DIR/IOS-$config.ipa\" -F \"uKey=$PGY_USER_KEY\" -F \"_api_key=$PGY_API_KEY\" https://www.pgyer.com/apiv1/app/upload" | tee -a $APP_BUILD_LOGFILE
+	result=`curl -F "file=@$APP_BUILD_DIR/IOS-$config.ipa" -F "uKey=$PGY_USER_KEY" -F "_api_key=$PGY_API_KEY" https://www.pgyer.com/apiv1/app/upload`
 	echo $result | tee -a $APP_BUILD_LOGFILE
 	appQRCodeURL=`echo $result | grep -o "\"appQRCodeURL\":\".*\"" | awk -F: '{print $2":"$3}' | sed 's/^"//g' | sed 's/\"//g'`
 	echo $appQRCodeURL
@@ -116,27 +135,25 @@ main() {
 			'DEBUG')
 				do_pre
 				do_git $BRANCH
-				do_build assembleRelease
-				do_sync release
+				do_build Debug
+				do_sync Debug
 			;;
 			
 			'AUTOMATION')
-				APP_SOURCE_ROOTDIR=/home/git/automation/platform
+				APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/automation/XXXXX
 				do_pre
 				do_git $BRANCH
-				cd $APP_SOURCE_ROOTDIR && git checkout -- $APP_SOURCE_ROOTDIR/tool/src/main/java/com/xxx.java
-				sed -i "s#xx.xx.xx.xx/api-https/abc360/#xx.xx.xx.xx/abc360dev/#g" $APP_SOURCE_ROOTDIR/tool/src/main/java/com/xxx.java
-				do_build assembleDebug
-				do_sync debug
+				do_build Debug
+				do_sync Debug
 			;;
 
 
 			'RELEASE')
-				APP_SOURCE_ROOTDIR=/home/git/release/platform
+				APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/release/XXXXX
 				do_pre
 				do_git $BRANCH
-				do_build assembleRelease
-				do_sync release
+				do_build Internal
+				do_sync Internal
 			;;
 			
 			*)

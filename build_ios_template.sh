@@ -71,7 +71,7 @@ do_build() {
 	cd $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE
 	xcodebuild -workspace $APP_MAIN_MODULE.xcworkspace -sdk $SDK_NAME -scheme $APP_MAIN_MODULE -configuration $config clean
 	xcodebuild -workspace $APP_MAIN_MODULE.xcworkspace -sdk $SDK_NAME -scheme $APP_MAIN_MODULE -configuration $config archive -archivePath bin/$APP_MAIN_MODULE.xcarchive 2>&1 | tee -a $APP_BUILD_LOGFILE
-	xcodebuild -exportArchive -exportFormat IPA -archivePath bin/$APP_MAIN_MODULE.xcarchive -exportPath bin/$APP_MAIN_MODULE.ipa -exportProvisioningProfile $PROVISIONING_PROFILE_NAME 2>&1 | tee -a $APP_BUILD_LOGFILE
+	xcodebuild -exportArchive -exportFormat IPA -archivePath bin/$APP_MAIN_MODULE.xcarchive -exportPath bin/$APP_MAIN_MODULE.ipa -exportProvisioningProfile "$PROVISIONING_PROFILE_NAME" 2>&1 | tee -a $APP_BUILD_LOGFILE
 	echo "do build end at $(date)" | tee -a $APP_BUILD_LOGFILE
 }
 
@@ -133,6 +133,11 @@ main() {
 		case "$op" in
 			
 			'DEBUG')
+				APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/debug/XXXXX
+				PRODUCT_BUNDLE_IDENTIFIER='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				CODE_SIGN_IDENTITY='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_NAME='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_UUID='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 				do_pre
 				do_git $BRANCH
 				do_build Debug
@@ -141,6 +146,10 @@ main() {
 			
 			'AUTOMATION')
 				APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/automation/XXXXX
+				PRODUCT_BUNDLE_IDENTIFIER='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				CODE_SIGN_IDENTITY='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_NAME='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_UUID='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 				do_pre
 				do_git $BRANCH
 				do_build Debug
@@ -150,6 +159,10 @@ main() {
 
 			'RELEASE')
 				APP_SOURCE_ROOTDIR=/Users/mactest/Documents/git/release/XXXXX
+				PRODUCT_BUNDLE_IDENTIFIER='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				CODE_SIGN_IDENTITY='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_NAME='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+				PROVISIONING_PROFILE_UUID='XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
 				do_pre
 				do_git $BRANCH
 				do_build Internal

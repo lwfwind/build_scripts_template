@@ -51,11 +51,11 @@ do_git() {
 
 do_build() {
 	echo "do build start at $(date)" | tee -a $APP_BUILD_LOGFILE
-	applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
-	echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
-	newApplicationId=$applicationId.$OPERATION
-	echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
-	sed -i "s/applicationId .*/applicationId \"$newApplicationId\"/g" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
+	# applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
+	# echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
+	# newApplicationId=$applicationId.$OPERATION
+	# echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
+	# sed -i "s/applicationId .*/applicationId \"$newApplicationId\"/g" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
 	cd $APP_SOURCE_ROOTDIR
 	./gradlew $* 2>&1 | tee -a $APP_BUILD_LOGFILE
 	echo "do build end at $(date)" | tee -a $APP_BUILD_LOGFILE

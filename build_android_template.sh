@@ -25,6 +25,7 @@ do_pre() {
 	test -d $APP_SOURCE_ROOTDIR || mkdir -p $APP_SOURCE_ROOTDIR
 	cd $APP_SOURCE_ROOTDIR/
 	git checkout -- $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
+		git checkout -- $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/src/main/java/xxx.java
 	./gradlew clean 2>&1 | tee -a $APP_BUILD_LOGFILE
 	rm -rf $APP_BUILD_DIR/* | tee -a $APP_BUILD_LOGFILE
 	rm -rf $CURRENTDIR/log/*.txt
@@ -51,11 +52,12 @@ do_git() {
 
 do_build() {
 	echo "do build start at $(date)" | tee -a $APP_BUILD_LOGFILE
-	# applicationId=$(cat $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle | grep "applicationId " | awk  '{print $2}' | sed 's/\"//g')
-	# echo "applicationId:$applicationId" | tee -a $APP_BUILD_LOGFILE
-	# newApplicationId=$applicationId.$OPERATION
-	# echo "newApplicationId:$newApplicationId" | tee -a $APP_BUILD_LOGFILE
-	# sed -i "s/applicationId .*/applicationId \"$newApplicationId\"/g" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
+	sed -i "/^dependencies {/a\    compile 'com.github.lwfwind.automation:android-automation-library:2.7'" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/build.gradle
+	lineNum=`sed -n '/protected void attachBaseContext/=' $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/src/main/java/com/abc360/MyApplication.java`
+	echo $(($lineNum+1))
+	sed -i "$(($lineNum+1)) a\AutomationServer.install(this);" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/src/main/java/xxx.java
+	lineNum=`sed -n '/package /=' $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/src/main/java/xxx.java`
+	sed -i "$(($lineNum+1)) a\import com.qa.automation.android.AutomationServer;" $APP_SOURCE_ROOTDIR/$APP_MAIN_MODULE/src/main/java/xxx.java
 	cd $APP_SOURCE_ROOTDIR
 	./gradlew $* 2>&1 | tee -a $APP_BUILD_LOGFILE
 	echo "do build end at $(date)" | tee -a $APP_BUILD_LOGFILE

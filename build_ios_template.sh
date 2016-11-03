@@ -64,6 +64,7 @@ do_build() {
 	lineNum=`sed -n '/CFBundleVersion/=' $APP_MAIN_MODULE/Info.plist`
 	echo $(($lineNum+1)) | tee -a $APP_BUILD_LOGFILE
 	sed -i "" "$(($lineNum+1))s#<string>.*</string>#<string>$(date +%y%m%d)</string>#" $APP_MAIN_MODULE/Info.plist
+	sed -i "" "s#ProvisioningStyle = Automatic;#ProvisioningStyle = Manual;#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	sed -i "" "s#LaunchImage_release#LaunchImage_dev#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	sed -i "" "s#PRODUCT_BUNDLE_IDENTIFIER = .*;#PRODUCT_BUNDLE_IDENTIFIER = $PRODUCT_BUNDLE_IDENTIFIER;#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	sed -i "" "s#PROVISIONING_PROFILE = \".*\"#PROVISIONING_PROFILE = \"$PROVISIONING_PROFILE_UUID\"#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj

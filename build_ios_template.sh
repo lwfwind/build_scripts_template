@@ -63,6 +63,7 @@ do_build() {
 	export LANG=GBK.UTF-8
 	lineNum=`sed -n '/CFBundleVersion/=' $APP_MAIN_MODULE/Info.plist`
 	echo $(($lineNum+1)) | tee -a $APP_BUILD_LOGFILE
+	sed -i "" "s#DEBUG_INFORMATION_FORMAT = .*;#DEBUG_INFORMATION_FORMAT = \"dwarf-with-dsym\";#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	sed -i "" "$(($lineNum+1))s#<string>.*</string>#<string>$(date +%y%m%d)</string>#" $APP_MAIN_MODULE/Info.plist
 	sed -i "" "s#ProvisioningStyle = Automatic;#ProvisioningStyle = Manual;#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
 	sed -i "" "s#LaunchImage_release#LaunchImage_dev#g" $APP_MAIN_MODULE.xcodeproj/project.pbxproj
